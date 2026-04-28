@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analizador de Marineros BDO</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0c0f;
+    --panel: #111318;
+    --panel2: #181c24;
+    --border: #2a3040;
+    --gold: #c8a84b;
+    --gold2: #e8c86a;
+    --teal: #4fc4b8;
+    --overflow: #4a9eff;
+    --red: #e05252;
+    --probable: #e09a30;
+    --viable: #d97b2e;
+    --hard: #d45a20;
+    --green: #52c46a;
+    --text: #d4cfc5;
+    --muted: #6a7080;
+    --glow: rgba(200, 168, 75, 0.15);
+    /* Colores por clase de marinero */
+    --col-innocent:  #7ec8e3;
+    --col-quick:     #a78bfa;
+    --col-confident: #f9a84d;
+    --col-realistic: #6ed9a0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 17px;
+    min-height: 100vh;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(79, 196, 184, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(200, 168, 75, 0.06) 0%, transparent 50%);
+  }
+
+  header {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(200,168,75,0.05) 0%, transparent 100%);
+  }
+
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 30px rgba(200,168,75,0.3);
+  }
+
+  header p {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 1.2rem;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  /* UPLOAD SECTION */
+  .upload-section {
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    background: var(--panel);
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+  .upload-section:hover, .upload-section.drag-over {
+    border-color: var(--gold);
+    background: var(--panel2);
+  }
+  .upload-section input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 2.875rem; margin-bottom: 0.5rem; }
+  .upload-section h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.15rem;
+    color: var(--gold);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+  }
+  .upload-section p { color: var(--muted); font-size: 1.035rem; }
+
+  /* TYPE SELECT */
+  .type-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+    justify-content: center;
+  }
+  .type-btn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 0.5rem 1.3rem;
+    border-radius: 20px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .type-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .type-btn.active {
+    background: rgba(79, 196, 184, 0.12);
+    border-color: var(--teal);
+    color: var(--teal);
+    box-shadow: 0 0 10px rgba(79,196,184,0.18);
+  }
+  /* Color distinto por clase en el botón activo */
+  .type-btn.active[data-type="Innocent"]  { background: rgba(126,200,227,0.13); border-color: var(--col-innocent);  color: var(--col-innocent); }
+  .type-btn.active[data-type="Quick"]     { background: rgba(167,139,250,0.13); border-color: var(--col-quick);     color: var(--col-quick); }
+  .type-btn.active[data-type="Confident"] { background: rgba(249,168,77,0.13);  border-color: var(--col-confident); color: var(--col-confident); }
+  .type-btn.active[data-type="Realistic"] { background: rgba(110,217,160,0.13); border-color: var(--col-realistic); color: var(--col-realistic); }
+
+  /* LEVEL SELECT */
+  .level-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    justify-content: center;
+    align-items: center;
+  }
+  .level-row label {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.95rem;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin-right: 0.4rem;
+  }
+  .level-btn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .level-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .level-btn.active {
+    background: rgba(79, 196, 184, 0.12);
+    border-color: var(--teal);
+    color: var(--teal);
+    box-shadow: 0 0 8px rgba(79,196,184,0.2);
+  }
+
+  /* STAT INPUTS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+  }
+  @media (min-width: 700px) {
+    .stats-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  }
+  .stat-input-group {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.7rem;
+    transition: border-color 0.15s, opacity 0.2s;
+  }
+  .stat-input-group.excluded { opacity: 0.38; }
+  .sig-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
+  }
+  .sig-header input[type=checkbox] {
+    accent-color: var(--teal);
+    width: 13px; height: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .sig-name {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.92rem;
+    color: var(--text);
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+  }
+  .sig-name small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-family: 'Inter', Arial, sans-serif;
+    font-style: italic;
+  }
+  .sig-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+  }
+  .sig-cell label {
+    display: block;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin-bottom: 0.15rem;
+    text-transform: uppercase;
+  }
+  .sig-cell input {
+    width: 100%;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.38rem 0.5rem;
+    border-radius: 5px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1.05rem;
+    transition: border-color 0.15s;
+  }
+  .sig-cell input:focus { outline: none; border-color: var(--gold); }
+  .sig-cell input.goal-inp:focus { border-color: var(--teal); }
+
+  /* ANALYZE BTN */
+  .analyze-btn {
+    display: block;
+    margin: 1.5rem auto 0;
+    background: linear-gradient(135deg, rgba(79,196,184,0.15), rgba(79,196,184,0.08));
+    border: 1.5px solid var(--teal);
+    color: var(--teal);
+    padding: 0.8rem 2.5rem;
+    border-radius: 8px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 15px rgba(79,196,184,0.1);
+  }
+  .analyze-btn:hover {
+    background: linear-gradient(135deg, rgba(79,196,184,0.25), rgba(79,196,184,0.15));
+    box-shadow: 0 0 25px rgba(79,196,184,0.2);
+    transform: translateY(-1px);
+  }
+  /* RESULTS */
+  .results-section {
+    margin-top: 2rem;
+  }
+  .results-title {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .marinero-header {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .marinero-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    color: var(--gold2);
+  }
+  .marinero-meta {
+    color: var(--muted);
+    font-size: 1.05rem;
+    font-style: italic;
+  }
+  .marinero-level {
+    background: rgba(79,196,184,0.1);
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    padding: 0.2rem 0.7rem;
+    border-radius: 20px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+  .marinero-header-top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .marinero-key-stats {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  .key-stat-bubble {
+    background: rgba(200,168,75,0.1);
+    border: 1px solid rgba(200,168,75,0.45);
+    color: var(--gold2);
+    padding: 0.22rem 0.75rem;
+    border-radius: 20px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .key-stat-bubble .ksb-label {
+    color: var(--gold);
+    font-size: 0.78rem;
+    font-weight: 400;
+  }
+  .key-stat-bubble .ksb-val {
+    color: var(--gold2);
+    font-weight: 600;
+  }
+
+  .stat-cards {
+    display: grid;
+    gap: 0.7rem;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 1.1rem;
+    display: grid;
+    grid-template-columns: 1.3fr 0.62fr 0.62fr 0.95fr 1.05fr;
+    align-items: start;
+    gap: 0.5rem;
+    transition: border-color 0.15s;
+  }
+  .stat-card.good     { border-left: 3px solid var(--green); }
+  .stat-card.probable { border-left: 3px solid var(--probable); }
+  .stat-card.viable   { border-left: 3px solid var(--viable); }
+  .stat-card.hard     { border-left: 3px solid var(--hard); }
+  .stat-card.bad      { border-left: 3px solid var(--red); }
+  .stat-card.na       { border-left: 3px solid var(--border); opacity: 0.5; }
+
+  .stat-name {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.01em;
+  }
+  .stat-name small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-top: 0.1rem;
+    font-family: 'Inter', Arial, sans-serif;
+    font-style: italic;
+    font-weight: 400;
+  }
+  .stat-val {
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+  .stat-val.current { color: var(--text); }
+  .stat-val.goal { color: var(--muted); font-size: 1.1rem; }
+  .stat-val.nextlv {
+    text-align: center;
+    font-family: 'Inter', Arial, sans-serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .stat-val.nextlv .nlv-range { color: var(--text); font-size: 1.1rem; font-style: normal; font-weight: 600; }
+  .stat-val.nextlv .nlv-lv10  { font-size: 0.88rem; display: block; margin-top: 0.15rem; }
+  .stat-val.nextlv .nlv-falta { font-size: 0.88rem; display: block; color: var(--muted); }
+  .stat-range {
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+  .stat-status {
+    text-align: right;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .stat-status.good     { color: var(--green); }
+  .stat-status.probable { color: var(--probable); }
+  .stat-status.viable   { color: var(--viable); }
+  .stat-status.hard     { color: var(--hard); }
+  .stat-status.bad      { color: var(--red); }
+  .stat-status.na       { color: var(--muted); }
+
+  .stat-detail {
+    display: block;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.85rem;
+    font-weight: normal;
+    font-style: italic;
+    color: var(--muted);
+    letter-spacing: 0;
+    margin-top: 0.25rem;
+    line-height: 1.45;
+    white-space: normal;
+  }
+  .stat-detail .falta {
+    display: block;
+    font-size: 0.8rem;
+  }
+
+  .col-header {
+    display: grid;
+    grid-template-columns: 1.4fr 0.7fr 0.7fr 1.1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.3rem 1.1rem;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+  .col-header span { text-align: center; }
+  .col-header span:last-child { text-align: right; }
+
+  /* Progress bar for projection */
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 0.2rem;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .progress-fill.good     { background: var(--green); }
+  .progress-fill.probable { background: var(--probable); }
+  .progress-fill.viable   { background: var(--viable); }
+  .progress-fill.hard     { background: var(--hard); }
+  .progress-fill.bad      { background: var(--red); }
+
+  .summary-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+  .chip {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .chip.good     { background: rgba(82,196,106,0.1);  border: 1px solid var(--green);    color: var(--green); }
+  .chip.probable { background: rgba(212,184,74,0.1);  border: 1px solid var(--probable); color: var(--probable); }
+  .chip.viable   { background: rgba(217,123,46,0.1);  border: 1px solid var(--viable);   color: var(--viable); }
+  .chip.hard     { background: rgba(184,64,32,0.12);  border: 1px solid var(--hard);     color: var(--hard); }
+  .chip.bad      { background: rgba(224,82,82,0.1);   border: 1px solid var(--red);      color: var(--red); }
+
+  /* AI IMAGE SECTION */
+  .ai-section {
+    margin-top: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .ai-section-header {
+    background: var(--panel);
+    padding: 0.8rem 1.2rem;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .ai-section-body {
+    padding: 1.2rem;
+    background: var(--panel2);
+  }
+  .img-upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .img-upload-zone:hover { border-color: var(--teal); }
+  .img-upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .img-upload-zone p { color: var(--muted); font-size: 1.035rem; }
+  .img-upload-zone .icon { font-size: 2.3rem; margin-bottom: 0.5rem; }
+
+  #preview-img {
+    max-width: 100%;
+    max-height: 300px;
+    display: none;
+    border-radius: 8px;
+    margin: 0 auto;
+    display: block;
+  }
+  .analyze-img-btn {
+    display: block;
+    margin: 1rem auto 0;
+    background: linear-gradient(135deg, rgba(79,196,184,0.1), rgba(79,196,184,0.05));
+    border: 1.5px solid var(--teal);
+    color: var(--teal);
+    padding: 0.7rem 2rem;
+    border-radius: 8px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .analyze-img-btn:hover {
+    background: rgba(79,196,184,0.15);
+    box-shadow: 0 0 15px rgba(79,196,184,0.15);
+  }
+  .analyze-img-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ai-result {
+    margin-top: 1rem;
+    background: var(--panel);
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 1.035rem;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    display: none;
+  }
+
+  .spinner {
+    display: none;
+    text-align: center;
+    padding: 1rem;
+    color: var(--teal);
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 2rem 0;
+  }
+
+  .hint-box {
+    background: rgba(200,168,75,0.05);
+    border: 1px solid rgba(200,168,75,0.2);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-size: 0.977rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 1rem;
+  }
+  .hint-box strong { color: var(--gold); font-style: normal; }
+
+  /* Responsive */
+  @media (max-width: 500px) {
+    .stat-card {
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto;
+    }
+    .stat-name { grid-column: 1 / -1; }
+    .col-header { display: none; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Special / highlighted stats */
+  .stat-card.special {
+    background: linear-gradient(135deg, rgba(200,168,75,0.06) 0%, var(--panel) 60%);
+    border-color: rgba(200,168,75,0.35);
+  }
+  .stat-card.special .stat-name {
+    color: var(--gold2);
+  }
+  .stat-name .special-badge {
+    display: inline-block;
+    background: rgba(200,168,75,0.18);
+    border: 1px solid rgba(200,168,75,0.45);
+    color: var(--gold);
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.05rem 0.35rem;
+    border-radius: 10px;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+    text-transform: uppercase;
+  }
+
+  /* Dual-segment progress bar (goal + overflow) */
+  .progress-bar {
+    position: relative;
+  }
+  .progress-bar.dual {
+    display: flex;
+    overflow: visible;
+    background: var(--border);
+  }
+  .progress-fill-goal {
+    height: 100%;
+    border-radius: 2px 0 0 2px;
+    background: #3dd68c;
+    flex-shrink: 0;
+  }
+  .progress-fill-over {
+    height: 100%;
+    border-radius: 0 2px 2px 0;
+    background: var(--overflow);
+    flex-shrink: 0;
+  }
+  .progress-fill-short {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--border);
+    flex-shrink: 0;
+    /* the filled portion is the colored fill; the "short" sits as grey background */
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>⚓ Analizador de Marineros</h1>
+  <p>Black Desert — Evalúa si tu marinero va en buen camino</p>
+</header>
+
+<div class="container">
+
+  <!-- MODO 1: Entrada Manual -->
+  <div class="results-title">📊 Análisis manual de stats</div>
+
+  <div>
+    <div class="type-row" id="type-selector">
+      <button class="type-btn active" data-type="Innocent">Inocente</button>
+      <button class="type-btn" data-type="Quick">Rápido</button>
+      <button class="type-btn" data-type="Confident">Confiado</button>
+      <button class="type-btn" data-type="Realistic">Realista</button>
+    </div>
+
+    <div class="level-row">
+      <label>Nivel actual:</label>
+      <button class="level-btn active" data-level="1">1</button>
+      <button class="level-btn" data-level="2">2</button>
+      <button class="level-btn" data-level="3">3</button>
+      <button class="level-btn" data-level="4">4</button>
+      <button class="level-btn" data-level="5">5</button>
+      <button class="level-btn" data-level="6">6</button>
+      <button class="level-btn" data-level="7">7</button>
+      <button class="level-btn" data-level="8">8</button>
+      <button class="level-btn" data-level="9">9</button>
+      <button class="level-btn" data-level="10">10</button>
+    </div>
+
+    <div class="stats-grid" id="stats-inputs">
+      <!-- generated by JS -->
+    </div>
+
+    <button class="analyze-btn" id="analyze-manual-btn">⚔ Analizar marinero</button>
+
+    <div id="manual-results" class="results-section" style="display:none"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- MODO 2: Imagen con OCR -->
+  <div class="ai-section">
+    <div class="ai-section-header">
+      📖 Análisis por captura de pantalla (OCR gratuito)
+    </div>
+    <div class="ai-section-body">
+      <div class="img-upload-zone" id="img-zone">
+        <input type="file" id="img-input" accept="image/*">
+        <div class="icon">📷</div>
+        <p>Sube o <strong style="color:var(--teal)">pega (Ctrl+V)</strong> una captura del marinero</p>
+        <p style="font-size:0.8rem; margin-top:0.3rem;">OCR local — sin internet, sin costo. Funciona mejor con capturas recortadas al panel del marinero.</p>
+      </div>
+      <div id="img-info-tag" style="display:none;font-size:0.78rem;color:var(--muted);font-style:italic;margin-top:0.5rem;text-align:center;"></div>
+      <img id="preview-img" alt="Captura del juego" style="display:none; margin-top:1rem;">
+      <button class="analyze-img-btn" id="analyze-img-btn" disabled>🔍 Analizar imagen</button>
+      <div class="spinner" id="spinner">📖 Iniciando OCR...</div>
+      <div class="ai-result" id="ai-result"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===================== DATA =====================
+const STAT_NAMES_ES = {
+  'Endurance (Speed)':   { es: 'Persistencia',    enShort: 'Speed',    esShort: 'Velocidad' },
+  'Wits (Acceleration)': { es: 'Astucia',         enShort: 'Accel',    esShort: 'Aceleración' },
+  'Awareness (Turn)':    { es: 'Instinto',         enShort: 'Turn',     esShort: 'Vuelta' },
+  'Strength (Brake)':    { es: 'Fuerza',           enShort: 'Brake',    esShort: 'Freno' },
+  'Patience (Reload)':   { es: 'Paciencia',        enShort: 'Reload',   esShort: 'Recarga' },
+  'Force (Range)':       { es: 'Vigor',             enShort: 'Range',    esShort: 'Rango' },
+  'Focus (Accuracy)':    { es: 'Concentración',    enShort: 'Focus',    esShort: 'Dispersión' },
+  'Vision (Angle)':      { es: 'Visión',           enShort: 'Angle',    esShort: 'Ángulo' },
+};
+
+const STAT_KEYS = Object.keys(STAT_NAMES_ES);
+
+// Goals from "My Sailors V1.0" sheet (Goal column = col S, index 18)
+const GOALS = {
+  Innocent:  { 'Endurance (Speed)': 3.6, 'Wits (Acceleration)': 1.5, 'Awareness (Turn)': 2.1, 'Strength (Brake)': 2.1, 'Patience (Reload)': 0, 'Force (Range)': 0, 'Focus (Accuracy)': 0, 'Vision (Angle)': 0 },
+  Confident: { 'Endurance (Speed)': 1.6, 'Wits (Acceleration)': 1.6, 'Awareness (Turn)': 7.9, 'Strength (Brake)': 3.5, 'Patience (Reload)': 0, 'Force (Range)': 0, 'Focus (Accuracy)': 0, 'Vision (Angle)': 0 },
+  Realistic: { 'Endurance (Speed)': 2.0, 'Wits (Acceleration)': 2.6, 'Awareness (Turn)': 8.4, 'Strength (Brake)': 3.1, 'Patience (Reload)': 0, 'Force (Range)': 1.4, 'Focus (Accuracy)': 1.4, 'Vision (Angle)': 45.9 },
+  Quick:     { 'Endurance (Speed)': 2.0, 'Wits (Acceleration)': 6.7, 'Awareness (Turn)': 1.8, 'Strength (Brake)': 3.0, 'Patience (Reload)': 0, 'Force (Range)': 4.5, 'Focus (Accuracy)': 1.6, 'Vision (Angle)': 7.0 },
+};
+
+// Minimum stats per level (from Minimum Stats table in each sheet)
+// Format: [Lv1, Lv2, ..., Lv10]
+const MIN_STATS = {
+  Innocent: {
+    'Endurance (Speed)':   [1.2, 1.3, 1.4, 1.6, 1.7, 1.8, 2.1, 2.3, 2.5, 2.8],
+    'Wits (Acceleration)': [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2],
+    'Awareness (Turn)':    [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0, 1.1, 1.2, 1.4],
+    'Strength (Brake)':    [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0, 1.1, 1.2, 1.4],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [0,0,0,0,0,0,0,0,0,0],
+    'Focus (Accuracy)':    [0,0,0,0,0,0,0,0,0,0],
+    'Vision (Angle)':      [0,0,0,0,0,0,0,0,0,0],
+  },
+  Quick: {
+    'Endurance (Speed)':   [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+    'Wits (Acceleration)': [1.5, 1.6, 2.0, 2.4, 3.0, 3.1, 3.3, 3.6, 4.0, 4.6],
+    'Awareness (Turn)':    [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.3],
+    'Strength (Brake)':    [0.2, 0.3, 0.4, 0.6, 0.8, 1.1, 1.3, 1.5, 1.8, 2.2],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [2.0, 2.1, 2.2, 2.4, 2.6, 2.9, 3.0, 3.1, 3.3, 3.6],
+    'Focus (Accuracy)':    [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2],
+    'Vision (Angle)':      [6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9],
+  },
+  Confident: {
+    'Endurance (Speed)':   [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.3],
+    'Wits (Acceleration)': [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.3],
+    'Awareness (Turn)':    [3.0, 3.3, 3.6, 3.9, 4.3, 4.7, 5.2, 5.8, 6.4, 7.1],
+    'Strength (Brake)':    [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.9, 2.1, 2.3, 2.6],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [0,0,0,0,0,0,0,0,0,0],
+    'Focus (Accuracy)':    [0,0,0,0,0,0,0,0,0,0],
+    'Vision (Angle)':      [0,0,0,0,0,0,0,0,0,0],
+  },
+  Realistic: {
+    'Endurance (Speed)':   [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+    'Wits (Acceleration)': [0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.1, 1.3, 1.5, 1.7],
+    'Awareness (Turn)':    [3.0, 3.1, 3.3, 3.6, 4.0, 4.1, 4.3, 4.6, 5.1, 5.7],
+    'Strength (Brake)':    [0.2, 0.3, 0.4, 0.6, 0.8, 1.1, 1.3, 1.5, 1.8, 2.2],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2],
+    'Focus (Accuracy)':    [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2],
+    'Vision (Angle)':      [15.0, 18.1, 21.2, 24.3, 27.4, 30.5, 33.6, 36.5, 39.3, 41.9],
+  },
+};
+
+// Max stats at Lv10 (from Max Growth cumulated)
+const MAX_LV10 = {
+  Innocent: {
+    'Endurance (Speed)':   4.0, 'Wits (Acceleration)': 1.6, 'Awareness (Turn)': 2.5,
+    'Strength (Brake)': 2.5, 'Patience (Reload)': 0, 'Force (Range)': 0, 'Focus (Accuracy)': 0, 'Vision (Angle)': 0,
+  },
+  Quick: {
+    'Endurance (Speed)':   1.4, 'Wits (Acceleration)': 7.8, 'Awareness (Turn)': 2.0,
+    'Strength (Brake)': 3.5, 'Patience (Reload)': 0, 'Force (Range)': 5.0, 'Focus (Accuracy)': 1.8, 'Vision (Angle)': 7.1,
+  },
+  Confident: {
+    'Endurance (Speed)':   1.7, 'Wits (Acceleration)': 1.7, 'Awareness (Turn)': 8.3,
+    'Strength (Brake)': 3.9, 'Patience (Reload)': 0, 'Force (Range)': 0, 'Focus (Accuracy)': 0, 'Vision (Angle)': 0,
+  },
+  Realistic: {
+    'Endurance (Speed)':   1.8, 'Wits (Acceleration)': 3.0, 'Awareness (Turn)': 9.8,
+    'Strength (Brake)': 3.5, 'Patience (Reload)': 0, 'Force (Range)': 1.5, 'Focus (Accuracy)': 1.5, 'Vision (Angle)': 48.0,
+  },
+};
+
+
+// Max growth per level [Lv1, Lv2, ..., Lv10] — datos exactos del Excel (Max Growth)
+const MAX_GROWTH = {
+  Innocent: {
+    'Endurance (Speed)':   [1.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.4, 0.3, 0.3, 0.5],
+    'Wits (Acceleration)': [0.3, 0.1, 0.1, 0.2, 0.1, 0.1, 0.2, 0.1, 0.1, 0.3],
+    'Awareness (Turn)':    [0.3, 0.1, 0.1, 0.3, 0.2, 0.2, 0.3, 0.3, 0.3, 0.4],
+    'Strength (Brake)':    [0.3, 0.1, 0.1, 0.3, 0.2, 0.2, 0.3, 0.3, 0.3, 0.4],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [0,0,0,0,0,0,0,0,0,0],
+    'Focus (Accuracy)':    [0,0,0,0,0,0,0,0,0,0],
+    'Vision (Angle)':      [0,0,0,0,0,0,0,0,0,0],
+  },
+  Quick: {
+    'Endurance (Speed)':   [0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3],
+    'Wits (Acceleration)': [1.5, 0.4, 0.7, 0.7, 0.9, 0.5, 0.6, 0.7, 0.8, 1.0],
+    'Awareness (Turn)':    [0.2, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.4],
+    'Strength (Brake)':    [0.2, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.4, 0.5, 0.6],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [2.0, 0.2, 0.2, 0.2, 0.3, 0.4, 0.3, 0.4, 0.4, 0.6],
+    'Focus (Accuracy)':    [0.2, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.4],
+    'Vision (Angle)':      [6.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2],
+  },
+  Confident: {
+    'Endurance (Speed)':   [0.3, 0.1, 0.1, 0.2, 0.1, 0.1, 0.2, 0.1, 0.2, 0.3],
+    'Wits (Acceleration)': [0.3, 0.1, 0.1, 0.2, 0.1, 0.1, 0.2, 0.1, 0.2, 0.3],
+    'Awareness (Turn)':    [3.0, 0.4, 0.4, 0.5, 0.5, 0.5, 0.7, 0.7, 0.7, 0.9],
+    'Strength (Brake)':    [0.6, 0.3, 0.3, 0.4, 0.3, 0.3, 0.4, 0.4, 0.4, 0.5],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [0,0,0,0,0,0,0,0,0,0],
+    'Focus (Accuracy)':    [0,0,0,0,0,0,0,0,0,0],
+    'Vision (Angle)':      [0,0,0,0,0,0,0,0,0,0],
+  },
+  Realistic: {
+    'Endurance (Speed)':   [0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3],
+    'Wits (Acceleration)': [0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.4, 0.4, 0.4],
+    'Awareness (Turn)':    [3.0, 0.5, 0.6, 0.7, 0.8, 0.6, 0.7, 0.8, 1.0, 1.1],
+    'Strength (Brake)':    [0.2, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.4, 0.5, 0.6],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.3],
+    'Focus (Accuracy)':    [0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.3],
+    'Vision (Angle)':      [15.0, 3.5, 3.5, 3.5, 3.7, 3.7, 3.7, 3.7, 3.7, 4.0],
+  },
+};
+
+// Maximum Stats acumulados por nivel [Lv1..Lv10] — datos exactos del Excel (Maximum Stats)
+const MAX_STATS = {
+  Innocent: {
+    'Endurance (Speed)':   [1.2, 1.4, 1.6, 1.9, 2.2, 2.5, 2.9, 3.2, 3.5, 4.0],
+    'Wits (Acceleration)': [0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 1.1, 1.2, 1.3, 1.6],
+    'Awareness (Turn)':    [0.3, 0.4, 0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.1, 2.5],
+    'Strength (Brake)':    [0.3, 0.4, 0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.1, 2.5],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [0,0,0,0,0,0,0,0,0,0],
+    'Focus (Accuracy)':    [0,0,0,0,0,0,0,0,0,0],
+    'Vision (Angle)':      [0,0,0,0,0,0,0,0,0,0],
+  },
+  Quick: {
+    'Endurance (Speed)':   [0.2, 0.4, 0.6, 0.8, 1.0, 1.3, 1.6, 1.9, 2.2, 2.5],
+    'Wits (Acceleration)': [1.5, 1.9, 2.6, 3.3, 4.2, 4.7, 5.3, 6.0, 6.8, 7.8],
+    'Awareness (Turn)':    [0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 2.0],
+    'Strength (Brake)':    [0.2, 0.4, 0.6, 0.9, 1.2, 1.6, 2.0, 2.4, 2.9, 3.5],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [2.0, 2.2, 2.4, 2.6, 2.9, 3.3, 3.6, 4.0, 4.4, 5.0],
+    'Focus (Accuracy)':    [0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.8],
+    'Vision (Angle)':      [6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.9, 7.1],
+  },
+  Confident: {
+    'Endurance (Speed)':   [0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 1.1, 1.2, 1.4, 1.7],
+    'Wits (Acceleration)': [0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 1.1, 1.2, 1.4, 1.7],
+    'Awareness (Turn)':    [3.0, 3.4, 3.8, 4.3, 4.8, 5.3, 6.0, 6.7, 7.4, 8.3],
+    'Strength (Brake)':    [0.6, 0.9, 1.2, 1.6, 1.9, 2.2, 2.6, 3.0, 3.4, 3.9],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [0,0,0,0,0,0,0,0,0,0],
+    'Focus (Accuracy)':    [0,0,0,0,0,0,0,0,0,0],
+    'Vision (Angle)':      [0,0,0,0,0,0,0,0,0,0],
+  },
+  Realistic: {
+    'Endurance (Speed)':   [0.2, 0.4, 0.6, 0.8, 1.0, 1.3, 1.6, 1.9, 2.2, 2.5],
+    'Wits (Acceleration)': [0.2, 0.4, 0.6, 0.9, 1.2, 1.5, 1.8, 2.2, 2.6, 3.0],
+    'Awareness (Turn)':    [3.0, 3.5, 4.1, 4.8, 5.6, 6.2, 6.9, 7.7, 8.7, 9.8],
+    'Strength (Brake)':    [0.2, 0.4, 0.6, 0.9, 1.2, 1.6, 2.0, 2.4, 2.9, 3.5],
+    'Patience (Reload)':   [0,0,0,0,0,0,0,0,0,0],
+    'Force (Range)':       [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0, 1.2, 1.5],
+    'Focus (Accuracy)':    [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0, 1.2, 1.5],
+    'Vision (Angle)':      [15.0, 18.5, 22.0, 25.5, 29.2, 32.9, 36.6, 40.3, 44.0, 48.0],
+  },
+};
+
+// ===================== STATE =====================
+let currentType = 'Innocent';
+let currentLevel = 1;
+
+// ===================== UI INIT =====================
+function buildStatInputs(type) {
+  const grid = document.getElementById('stats-inputs');
+  grid.innerHTML = '';
+  const goals = GOALS[type || currentType];
+  STAT_KEYS.forEach(key => {
+    const info = STAT_NAMES_ES[key];
+    const goalVal = goals[key] || 0;
+    const hasGoal = goalVal > 0;
+    const safeId = key.replace(/[^a-z]/gi,'_');
+    const div = document.createElement('div');
+    div.className = 'stat-input-group' + (hasGoal ? '' : ' excluded');
+    div.id = `group-${safeId}`;
+    div.innerHTML = `
+      <div class="sig-header">
+        <input type="checkbox" data-enabled="${key}" ${hasGoal ? 'checked' : ''}>
+        <span class="sig-name">${info.es}<small>${key.split('(')[1]?.replace(')','') || ''}</small></span>
+      </div>
+      <div class="sig-inputs">
+        <div class="sig-cell">
+          <label>Valor</label>
+          <input type="number" step="0.1" min="0" placeholder="0.0" data-stat="${key}">
+        </div>
+        <div class="sig-cell">
+          <label>Meta</label>
+          <input type="number" step="0.1" min="0" placeholder="—" class="goal-inp" data-goal="${key}" value="${hasGoal ? goalVal : ''}">
+        </div>
+      </div>
+    `;
+    // Toggle excluded class when checkbox changes
+    div.querySelector('[data-enabled]').addEventListener('change', e => {
+      div.classList.toggle('excluded', !e.target.checked);
+    });
+    grid.appendChild(div);
+  });
+}
+buildStatInputs();
+
+function updateGoalInputs(type) {
+  const goals = GOALS[type];
+  STAT_KEYS.forEach(key => {
+    const goalInp = document.querySelector(`[data-goal="${key}"]`);
+    const enabledInp = document.querySelector(`[data-enabled="${key}"]`);
+    const safeId = key.replace(/[^a-z]/gi,'_');
+    const group = document.getElementById(`group-${safeId}`);
+    if (goalInp) goalInp.value = goals[key] > 0 ? goals[key] : '';
+    if (enabledInp) {
+      enabledInp.checked = goals[key] > 0;
+      group?.classList.toggle('excluded', !enabledInp.checked);
+    }
+  });
+}
+
+function readGoalsEnabled() {
+  const customGoals = {};
+  const enabledKeys = new Set();
+  STAT_KEYS.forEach(key => {
+    const goalVal = parseFloat(document.querySelector(`[data-goal="${key}"]`)?.value) || 0;
+    customGoals[key] = goalVal;
+    const checked = document.querySelector(`[data-enabled="${key}"]`)?.checked;
+    if (checked && goalVal > 0) enabledKeys.add(key);
+  });
+  return { customGoals, enabledKeys };
+}
+
+// Type buttons
+document.getElementById('type-selector').addEventListener('click', e => {
+  const btn = e.target.closest('.type-btn');
+  if (!btn) return;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentType = btn.dataset.type;
+  updateGoalInputs(currentType);
+});
+
+// Level buttons
+document.querySelector('.level-row').addEventListener('click', e => {
+  const btn = e.target.closest('.level-btn');
+  if (!btn) return;
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentLevel = parseInt(btn.dataset.level);
+});
+
+// ===================== ANALYSIS =====================
+function analyze(type, level, stats, customGoals, enabledKeys) {
+  const defaultGoals = GOALS[type];
+  const minAtLv = MIN_STATS[type];
+  const maxLv10 = MAX_LV10[type];
+
+  const results = [];
+  STAT_KEYS.forEach(key => {
+    const val = parseFloat(stats[key]) || 0;
+    const goal = customGoals ? (customGoals[key] || 0) : (defaultGoals[key] || 0);
+    const minLv10 = minAtLv[key][9];
+    const maxLv10val = maxLv10[key] || 0;
+
+    // Skip if no goal or stat excluded
+    if (goal === 0 || (enabledKeys && !enabledKeys.has(key))) {
+      results.push({ key, val, goal, minLv10, maxLv10val, status: 'na', projection: null });
+      return;
+    }
+
+    // --- Crecimiento restante hasta lv10 (datos exactos del Excel) ---
+    const maxStatsAtLv = MAX_STATS[type];
+    const maxGrowthAtLv = MAX_GROWTH[type];
+
+    // minRemaining: suma de Min Growth desde el próximo nivel hasta lv10
+    //   = MIN_STATS[lv10] − MIN_STATS[nivel actual]
+    const minRemaining = Math.max(0, minLv10 - minAtLv[key][level - 1]);
+
+    // maxRemaining: suma de Max Growth desde el próximo nivel hasta lv10
+    //   = MAX_STATS[lv10] − MAX_STATS[nivel actual]
+    //   Esto refleja exactamente el rango del Excel por nivel
+    const maxRemaining = Math.max(0, maxStatsAtLv[key][9] - maxStatsAtLv[key][level - 1]);
+
+    const projectedMin = val + minRemaining;
+    const projectedMax = val + maxRemaining;
+
+    // needed: cuánto le falta crecer para llegar a la meta
+    const needed = Math.max(0, goal - val);
+
+    let status;
+    if (level === 10) {
+      // Nivel máximo: comparación directa, sin proyecciones
+      status = val >= goal ? 'good' : 'bad';
+    } else {
+      if (needed <= 0) {
+        // Ya superó la meta
+        status = 'good';
+      } else if (maxRemaining < needed) {
+        // Ni en el mejor caso llega: imposible
+        status = 'bad';
+      } else if (minRemaining >= needed) {
+        // Llega incluso sacando el mínimo: garantizado
+        status = 'good';
+      } else {
+        // needed cae dentro del tramo incierto [minRemaining, maxRemaining]
+        // Dividimos ese tramo en 3 zonas:
+        //   primer 40%  → Probable  (necesita poco más del mínimo)
+        //   siguiente 35% → Viable
+        //   último 25%  → Difícil   (necesita casi el máximo posible)
+        const rangeSize  = maxRemaining - minRemaining;
+        const posInRange = needed - minRemaining;
+        const ratio      = rangeSize > 0 ? posInRange / rangeSize : 1;
+
+        if      (ratio < 0.40) status = 'probable';
+        else if (ratio < 0.75) status = 'viable';
+        else                   status = 'hard';
+      }
+    }
+
+    // Rango de crecimiento del PRÓXIMO nivel — datos exactos del Excel
+    let nextLvMin = 0, nextLvMax = 0;
+    if (level < 10) {
+      // Min del próximo nivel = diferencia entre mínimos acumulados consecutivos
+      nextLvMin = Math.max(0, minAtLv[key][level] - minAtLv[key][level - 1]);
+      // Max del próximo nivel = dato exacto de MAX_GROWTH[level] (índice = nivel en 0-based)
+      nextLvMax = MAX_GROWTH[type][key][level];
+    }
+
+        // Progress: how far along toward goal is current value
+    const progress = goal > 0 ? Math.min(100, (val / goal) * 100) : 0;
+
+    results.push({ key, val, goal, minLv10, maxLv10val, projectedMin, projectedMax, nextLvMin, nextLvMax, minRemaining, maxRemaining, status, progress });
+  });
+  return results;
+}
+
+
+// Special / signature stats per sailor type
+const SPECIAL_STATS = {
+  Innocent:  ['Endurance (Speed)'],
+  Realistic: ['Awareness (Turn)', 'Vision (Angle)'],
+  Quick:     ['Strength (Brake)', 'Wits (Acceleration)'],
+  Confident: ['Awareness (Turn)', 'Endurance (Speed)'],
+};
+
+function renderResults(type, level, results, container) {
+  const typeName = { Innocent: 'Inocente', Quick: 'Rápido', Confident: 'Confiado', Realistic: 'Realista' }[type];
+  const typeColor = { Innocent: 'var(--col-innocent)', Quick: 'var(--col-quick)', Confident: 'var(--col-confident)', Realistic: 'var(--col-realistic)' }[type];
+  const typeColorRgb = { Innocent: '126,200,227', Quick: '167,139,250', Confident: '249,168,77', Realistic: '110,217,160' }[type];
+
+  const good     = results.filter(r => r.status === 'good').map(r => STAT_NAMES_ES[r.key].es);
+  const probable = results.filter(r => r.status === 'probable').map(r => STAT_NAMES_ES[r.key].es);
+  const viable   = results.filter(r => r.status === 'viable').map(r => STAT_NAMES_ES[r.key].es);
+  const hard     = results.filter(r => r.status === 'hard').map(r => STAT_NAMES_ES[r.key].es);
+  const bad      = results.filter(r => r.status === 'bad').map(r => STAT_NAMES_ES[r.key].es);
+
+  const isMaxLevel = level === 10;
+  const chipGoodLabel = isMaxLevel ? '✓ Logrado' : '✓ Garantizado';
+  const chipBadLabel  = isMaxLevel ? '✗ No logrado' : '✗ Imposible';
+
+  // Chips HTML (se renderiza al final)
+  const chipsHtml = `
+    <div class="summary-chips" style="margin-top:1rem">
+      ${good.length     ? `<span class="chip good">${chipGoodLabel}: ${good.join(', ')}</span>` : ''}
+      ${!isMaxLevel && probable.length ? `<span class="chip probable">≈ Probable: ${probable.join(', ')}</span>` : ''}
+      ${!isMaxLevel && viable.length   ? `<span class="chip viable">⚠ Viable: ${viable.join(', ')}</span>` : ''}
+      ${!isMaxLevel && hard.length     ? `<span class="chip hard">⚠ Difícil: ${hard.join(', ')}</span>` : ''}
+      ${bad.length      ? `<span class="chip bad">${chipBadLabel}: ${bad.join(', ')}</span>` : ''}
+    </div>`;
+
+  let html = `
+    <div class="marinero-header" style="border-color:rgba(${typeColorRgb},0.35);flex-direction:column;align-items:flex-start">
+      <div class="marinero-header-top">
+        <span class="marinero-name" style="color:${typeColor}">Marinero ${typeName}</span>
+        <span class="marinero-level">Nivel ${level}</span>
+        ${level === 10 ? `<span style="color:${typeColor};font-family:Cinzel,serif;font-size:0.85rem">★ Máximo</span>` : ''}
+      </div>
+      <div class="marinero-key-stats">
+        ${(SPECIAL_STATS[type] || []).map(key => {
+          const r = results.find(x => x.key === key);
+          const label = STAT_NAMES_ES[key]?.esShort || STAT_NAMES_ES[key]?.es || key;
+          const showVal = isMaxLevel && r && r.goal > 0 && r.val >= r.goal;
+          return `<span class="key-stat-bubble">
+            <span class="ksb-label">★ ${label}</span>
+            ${showVal ? `<span class="ksb-val">${r.val.toFixed(1)}</span>` : ''}
+          </span>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="col-header" style="margin-top:1rem">
+      <span style="text-align:left">Stat</span>
+      <span>Actual</span>
+      <span>Meta</span>
+      <span>Crecimiento</span>
+      <span>Estado</span>
+    </div>
+    <div class="stat-cards">
+  `;
+
+  const specialKeys = SPECIAL_STATS[type] || [];
+
+  results.forEach(r => {
+    if (r.status === 'na') return;
+    const name = STAT_NAMES_ES[r.key];
+    const isSpecial = specialKeys.includes(r.key);
+    const isOver = isMaxLevel && r.goal > 0 && r.val > r.goal;
+    const statusText = isMaxLevel
+      ? (r.status === 'good' ? (isOver ? '★ Superado' : '✓ Logrado') : r.status === 'bad' ? '✗ No logrado' : '—')
+      : ({ good: '✓ Garantizado', probable: '≈ Probable', viable: '⚠ Viable', hard: '⚠ Difícil', bad: '✗ Imposible' }[r.status] || '—');
+
+    // ---- Progress bar ----
+    let barHtml;
+    if (isMaxLevel && r.goal > 0) {
+      const goalPct  = Math.min(100, (r.goal / Math.max(r.val, r.goal)) * 100);
+      if (r.val >= r.goal) {
+        // Superó la meta: verde hasta meta, teal para el exceso
+        const overPct = Math.min(40, ((r.val - r.goal) / r.goal) * 100); // cap overflow visual at 40% extra
+        const greenPct = 100 - overPct;
+        barHtml = `<div class="progress-bar dual" style="height:7px;border-radius:3px;overflow:hidden;box-shadow:0 0 6px rgba(74,158,255,0.3)">` +
+          `<div class="progress-fill-goal" style="width:${greenPct.toFixed(1)}%"></div>` +
+          `<div class="progress-fill-over" style="width:${overPct.toFixed(1)}%"></div>` +
+          `</div>`;
+      } else {
+        // No llegó: barra de color hasta lo que tiene, el resto queda en gris
+        const filledPct = (r.val / r.goal) * 100;
+        const shortPct  = 100 - filledPct;
+        barHtml = `<div class="progress-bar" style="height:7px;border-radius:3px;overflow:hidden;background:var(--border)">` +
+          `<div class="progress-fill bad" style="width:${filledPct.toFixed(1)}%;border-radius:2px"></div>` +
+          `</div>`;
+      }
+    } else {
+      const pct = Math.min(100, r.progress || 0);
+      barHtml = `<div class="progress-bar" style="height:7px;border-radius:3px"><div class="progress-fill ${r.status}" style="width:${pct}%;border-radius:3px"></div></div>`;
+    }
+
+    // ---- Growth column ----
+    let growthHtml = '<div class="stat-val nextlv">—</div>';
+    if (isMaxLevel && r.goal > 0) {
+      const diff = r.val - r.goal;
+      const sign = diff >= 0 ? '+' : '';
+      const diffColor = diff > 0 ? 'var(--overflow)' : diff === 0 ? 'var(--green)' : 'var(--red)';
+      growthHtml = `<div class="stat-val nextlv" style="font-style:normal">
+        <span style="color:${diffColor};font-size:1.05rem;font-weight:600">${sign}${diff.toFixed(1)}</span>
+        <span style="display:block;font-size:0.78rem;color:var(--muted);font-style:italic">${diff > 0 ? 'Sobre meta' : diff === 0 ? 'Meta exacta' : 'Bajo meta'}</span>
+      </div>`;
+    } else if (!isMaxLevel && r.nextLvMin !== undefined && r.status !== 'na') {
+      const needed = Math.max(0, r.goal - r.val);
+      // Todos los niveles: suma acumulada de min y max restantes hasta lv10
+      const minTot = r.minRemaining.toFixed(1);
+      const maxTot = r.maxRemaining.toFixed(1);
+      const levelsLeft = 10 - level;
+      growthHtml = `
+        <div class="stat-val nextlv">
+          <span class="nlv-range">+${minTot} – +${maxTot}</span>
+          <span class="nlv-falta" style="color:var(--muted);font-size:0.75rem">${levelsLeft} nivel${levelsLeft > 1 ? 'es' : ''} · Falta: +${needed.toFixed(1)}</span>
+        </div>`;
+    }
+
+    const specialBadge = isSpecial ? '<span class="special-badge">★ Clave</span>' : '';
+
+    html += `
+      <div class="stat-card ${r.status}${isSpecial ? ' special' : ''}">
+        <div class="stat-name">
+          ${name.es}${specialBadge}
+          <small>${name.esShort || name.enShort}</small>
+          ${barHtml}
+        </div>
+        <div class="stat-val current">${r.val.toFixed(1)}</div>
+        <div class="stat-val goal">${r.goal.toFixed(1)}</div>
+        ${growthHtml}
+        <div class="stat-status ${r.status}" style="${isOver ? 'color:var(--overflow)' : ''}">${statusText}</div>
+      </div>
+    `;
+  });
+
+  // Also show NA stats briefly
+  const naStats = results.filter(r => r.status === 'na' && r.val > 0);
+  if (naStats.length) {
+    html += `<div style="margin-top:0.5rem;color:var(--muted);font-size:0.85rem;font-style:italic;padding-left:1rem">Stats sin meta asignada: ${naStats.map(r => `${STAT_NAMES_ES[r.key].es} (${r.val.toFixed(1)})`).join(', ')}</div>`;
+  }
+
+  html += `</div>`;
+  // Chips al final
+  html += chipsHtml;
+  container.innerHTML = html;
+  container.style.display = 'block';
+}
+
+document.getElementById('analyze-manual-btn').addEventListener('click', () => {
+  const stats = {};
+  STAT_KEYS.forEach(key => {
+    const inp = document.querySelector(`[data-stat="${key}"]`);
+    stats[key] = parseFloat(inp?.value) || 0;
+  });
+  const { customGoals, enabledKeys } = readGoalsEnabled();
+  const results = analyze(currentType, currentLevel, stats, customGoals, enabledKeys);
+  renderResults(currentType, currentLevel, results, document.getElementById('manual-results'));
+  document.getElementById('manual-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// ===================== IMAGE ANALYSIS (Tesseract OCR) =====================
+const imgInput      = document.getElementById('img-input');
+const previewImg    = document.getElementById('preview-img');
+const analyzeImgBtn = document.getElementById('analyze-img-btn');
+const aiResult      = document.getElementById('ai-result');
+const spinner       = document.getElementById('spinner');
+
+let imageBase64    = null;
+let imageMediaType = 'image/jpeg';
+let imageDataUrl   = null; // needed for Tesseract (accepts data URL directly)
+
+// ---- FILE LOAD ----
+imgInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) loadImageFile(file);
+});
+
+document.addEventListener('paste', e => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) loadImageFile(file);
+      break;
+    }
+  }
+});
+
+function loadImageFile(file) {
+  imageMediaType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    imageDataUrl  = ev.target.result;
+    imageBase64   = ev.target.result.split(',')[1];
+    previewImg.src = ev.target.result;
+    previewImg.style.display = 'block';
+    analyzeImgBtn.disabled = false;
+    aiResult.style.display = 'none';
+    document.getElementById('img-info-tag').style.display = 'none';
+    document.getElementById('img-zone').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  reader.readAsDataURL(file);
+}
+
+// ---- IMAGE PREPROCESSING ----
+// Resize image to maxDim px on its longest side before OCR.
+// Smaller images → faster OCR and better character detection on BDO UI panels.
+function preprocessForOCR(dataUrl, maxDim = 1600) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const { width: w, height: h } = img;
+      if (w <= maxDim && h <= maxDim) {
+        resolve({ dataUrl, resized: false, origW: w, origH: h });
+        return;
+      }
+      const scale  = maxDim / Math.max(w, h);
+      const cw     = Math.round(w * scale);
+      const ch     = Math.round(h * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width  = cw;
+      canvas.height = ch;
+      // White background helps OCR with dark game UI
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.drawImage(img, 0, 0, cw, ch);
+      resolve({ dataUrl: canvas.toDataURL('image/png'), resized: true, origW: w, origH: h, newW: cw, newH: ch });
+    };
+    img.src = dataUrl;
+  });
+}
+
+// ---- PARSE TESSERACT TEXT → BDO stats ----
+function parseTesseractText(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // --- Sailor type ---
+  const typePatterns = [
+    [/inocen/i, 'Innocent'],
+    [/r[aá]pid/i, 'Quick'],
+    [/confia|segur/i, 'Confident'],
+    [/realis/i, 'Realistic'],
+  ];
+  let tipo = null;
+  for (const [re, t] of typePatterns) {
+    if (lines.some(l => re.test(l))) { tipo = t; break; }
+  }
+
+  // --- Level ---
+  let nivel = null;
+  for (const line of lines) {
+    const m = line.match(/(?:lv\.?|nivel)\s*(\d+)/i);
+    if (m) { nivel = parseInt(m[1]); break; }
+  }
+
+  // --- Stats: look for name keyword then closest decimal number ---
+  // Each entry: [stat key, regex to match the line containing the name]
+  const statPatterns = [
+    ['Endurance (Speed)',   /persistencia/i],
+    ['Wits (Acceleration)', /astucia/i],
+    ['Awareness (Turn)',    /instinto/i],
+    ['Strength (Brake)',    /fuerza/i],
+    ['Patience (Reload)',   /paciencia/i],
+    ['Force (Range)',       /vigor/i],
+    ['Focus (Accuracy)',    /concentraci[oó]n/i],
+    ['Vision (Angle)',      /visi[oó]n/i],
+  ];
+
+  const stats = {};
+  STAT_KEYS.forEach(k => { stats[k] = null; });
+
+  // Track consumed value-lines so the same OCR number is never claimed twice.
+  const usedValueLines = new Set();
+  const NUM_RE = /\b(\d{1,3}[.,]\d)\b/;
+
+  for (const [key, re] of statPatterns) {
+    for (let i = 0; i < lines.length; i++) {
+      if (!re.test(lines[i])) continue;
+      // 1st priority: number on the SAME line ("Astucia  1.9%")
+      const sameMatch = lines[i].match(NUM_RE);
+      if (sameMatch) {
+        stats[key] = parseFloat(sameMatch[1].replace(',', '.'));
+        usedValueLines.add(i);
+        break;
+      }
+      // 2nd priority: the very NEXT line only, if not already consumed
+      if (i + 1 < lines.length && !usedValueLines.has(i + 1)) {
+        const nextMatch = lines[i + 1].match(NUM_RE);
+        if (nextMatch) {
+          stats[key] = parseFloat(nextMatch[1].replace(',', '.'));
+          usedValueLines.add(i + 1);
+          break;
+        }
+      }
+      break; // name found but no number nearby -> null
+    }
+  }
+
+  return {
+    nombre: null,
+    tipo:   tipo  || 'Innocent',
+    nivel:  nivel || 1,
+    stats,
+  };
+}
+
+// ---- MAIN ANALYZE BUTTON ----
+analyzeImgBtn.addEventListener('click', async () => {
+  if (!imageDataUrl) return;
+  analyzeImgBtn.disabled = true;
+  spinner.style.display  = 'block';
+  spinner.textContent    = '📖 Preparando imagen...';
+  aiResult.style.display = 'none';
+
+  try {
+    // 1. Preprocess: resize if too large
+    const { dataUrl, resized, origW, origH, newW, newH } = await preprocessForOCR(imageDataUrl, 1600);
+    const infoTag = document.getElementById('img-info-tag');
+    if (resized) {
+      infoTag.textContent = `Imagen reducida de ${origW}×${origH} → ${newW}×${newH} px para mejor OCR`;
+      infoTag.style.display = 'block';
+    }
+
+    // 2. Run Tesseract OCR (Spanish)
+    spinner.textContent = '📖 Reconociendo texto... (10–25 seg)';
+    const { data: { text } } = await Tesseract.recognize(
+      dataUrl,
+      'spa',
+      {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            spinner.textContent = `📖 OCR ${Math.round(m.progress * 100)}%...`;
+          }
+        }
+      }
+    );
+    console.log('[Tesseract] texto extraído:\n', text);
+
+    // 3. Parse the OCR text
+    const parsed = parseTesseractText(text);
+    console.log('[Tesseract] parseado:', parsed);
+
+    // 4. Apply to UI
+    const typeMap = {
+      Innocent: 'Innocent', Quick: 'Quick', Confident: 'Confident', Realistic: 'Realistic',
+      Inocente: 'Innocent', Rápido: 'Quick', Confiado: 'Confident', Realista: 'Realistic',
+    };
+    const tipo  = typeMap[parsed.tipo] || 'Innocent';
+    const nivel = Math.min(10, Math.max(1, parseInt(parsed.nivel) || 1));
+
+    document.querySelectorAll('.type-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.type === tipo));
+    currentType = tipo;
+    updateGoalInputs(tipo);
+
+    document.querySelectorAll('.level-btn').forEach(b =>
+      b.classList.toggle('active', parseInt(b.dataset.level) === nivel));
+    currentLevel = nivel;
+
+    Object.entries(parsed.stats || {}).forEach(([k, v]) => {
+      const inp = document.querySelector(`[data-stat="${k}"]`);
+      if (inp && v !== null) inp.value = v;
+    });
+
+    // 5. Run analysis
+    const { customGoals, enabledKeys } = readGoalsEnabled();
+    const results = analyze(tipo, nivel, parsed.stats || {}, customGoals, enabledKeys);
+
+    // 6. Show OCR result summary
+    const typeName = { Innocent: 'Inocente', Quick: 'Rápido', Confident: 'Confiado', Realistic: 'Realista' }[tipo];
+    const detectedStats = Object.entries(parsed.stats || {}).filter(([, v]) => v !== null && v > 0);
+    const missingStats  = Object.entries(parsed.stats || {}).filter(([, v]) => v === null);
+
+    let html = `<div style="color:var(--teal);font-size:0.9rem;margin-bottom:0.8rem">
+      ✓ OCR completado — ${typeName} Lv.${nivel}
+    </div>`;
+
+    if (detectedStats.length) {
+      html += `<div style="font-size:0.82rem;color:var(--muted);margin-bottom:0.4rem">
+        Stats detectados (${detectedStats.length}/${STAT_KEYS.length}):
+      </div>`;
+      html += `<div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:0.6rem">`;
+      detectedStats.forEach(([k, v]) => {
+        html += `<span style="background:var(--panel);border:1px solid var(--border);color:var(--text);
+          padding:0.2rem 0.6rem;border-radius:12px;font-size:0.85rem">
+          ${STAT_NAMES_ES[k]?.es || k}: <strong>${v}</strong>
+        </span>`;
+      });
+      html += `</div>`;
+    }
+
+    if (missingStats.length) {
+      html += `<div style="background:rgba(224,154,48,0.08);border:1px solid var(--probable);
+        border-radius:7px;padding:0.55rem 0.9rem;font-size:0.85rem">
+        <strong style="color:var(--probable)">⚠ No detectados (ingresa manualmente):</strong>
+        <span style="color:var(--muted)"> ${missingStats.map(([k]) => STAT_NAMES_ES[k]?.es || k).join(', ')}</span>
+        <div style="color:var(--muted);font-size:0.78rem;margin-top:0.3rem">
+          Consejo: recorta la imagen al panel del marinero para mejorar el OCR.
+        </div>
+      </div>`;
+    }
+
+    aiResult.innerHTML = html;
+    aiResult.style.display = 'block';
+
+    renderResults(tipo, nivel, results, document.getElementById('manual-results'));
+    document.getElementById('manual-results').style.display = 'block';
+    document.getElementById('manual-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    aiResult.style.display  = 'block';
+    aiResult.innerHTML = `<span style="color:var(--red)">Error al analizar: ${err.message}</span>`;
+    console.error('[OCR error]', err);
+  } finally {
+    spinner.style.display  = 'none';
+    analyzeImgBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
